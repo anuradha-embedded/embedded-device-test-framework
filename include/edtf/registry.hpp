@@ -94,17 +94,19 @@ struct CaseOptions {
 inline CaseOptions opts() { return CaseOptions{}; }
 }  // namespace edtf
 
-// Resolves the optional trailing options argument: when omitted, the variadic
-// pack is empty and we fall back to a default-constructed CaseOptions.
+// Resolves the optional trailing options argument. When omitted, the variadic
+// pack is empty and choose_options() yields a default-constructed CaseOptions;
+// when one CaseOptions is supplied it is used as-is. The arguments are forwarded
+// directly (no leading comma), so this stays valid on both Clang and GCC under
+// -std=c++17 without relying on the GNU ", ##__VA_ARGS__" comma-removal
+// extension (which GCC does not apply when the pack arrives via a nested macro).
 #define EDTF_OPTS_OR_DEFAULT(...) \
-    (::edtf::detail::first_or_default(::edtf::opts(), ##__VA_ARGS__))
+    (::edtf::detail::choose_options(__VA_ARGS__))
 
 namespace edtf {
 namespace detail {
-inline CaseOptions first_or_default(CaseOptions fallback) { return fallback; }
-inline CaseOptions first_or_default(CaseOptions, CaseOptions provided) {
-    return provided;
-}
+inline CaseOptions choose_options() { return CaseOptions{}; }
+inline CaseOptions choose_options(CaseOptions provided) { return provided; }
 }  // namespace detail
 }  // namespace edtf
 
