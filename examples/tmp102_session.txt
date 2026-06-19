@@ -1,0 +1,33 @@
+# Sample TMP102 register dump and scripted I2C interaction.
+#
+# This file documents the device state and the expected bus traffic that the
+# example test suite (examples/example_suite.cpp) models in code. It is the
+# kind of fixture data a hardware engineer would hand off alongside a part:
+# a snapshot of register contents plus the sequence of transactions a driver
+# is expected to perform. The MockI2CBus expectation API mirrors this script.
+#
+# Device: TI TMP102 temperature sensor, 7-bit I2C address 0x48.
+#
+# Register map (8-bit pointer -> 16-bit big-endian value):
+#   0x00  TEMP    read-only, 12-bit left-justified, 0.0625 C/LSB
+#   0x01  CONFIG  read/write, power-of-reset value 0x60A0 (high byte 0x60)
+#   0x02  T_LOW   read/write alert threshold
+#   0x03  T_HIGH  read/write alert threshold
+
+# Initial register contents (backdoor seed, no bus traffic):
+seed 0x48 0x00 0x19 0x00     # TEMP = 0x190 >> 4 ... see note below
+seed 0x48 0x01 0x60          # CONFIG high byte at reset
+
+# Scripted one-shot conversion sequence (read-modify-write of CONFIG):
+#   1. read  CONFIG          -> 0x60
+#   2. write CONFIG          <- 0x60 | SD(0x01) | OS(0x80) = 0xE1
+expect read  0x48 0x01 0x60
+expect write 0x48 0x01 0xE1
+
+# Expected high-limit programming for an 80.0 C alert threshold:
+#   80.0 / 0.0625 = 1280 = 0x500, left-justified -> 0x5000 (hi 0x50, lo 0x00)
+expect write 0x48 0x03 0x50
+expect write 0x48 0x04 0x00
+
+# Note: a TEMP high byte of 0x19 with low byte 0x00 decodes as
+#   raw = 0x1900, value = raw >> 4 = 0x190 = 400 counts, 400 * 0.0625 = 25.0 C.
