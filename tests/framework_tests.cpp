@@ -148,6 +148,21 @@ static void test_runner_summary() {
     assert(text.find("TIMEOUT") != std::string::npos);
 }
 
+static void test_runner_can_be_reused() {
+    RunOptions opts;
+    opts.color = false;
+    opts.name_filter = "Self.passes_plain";
+    Runner runner(std::move(opts));
+    std::ostringstream out, err;
+
+    for (int run = 0; run < 2; ++run) {
+        assert(runner.run(out, err));
+        assert(runner.summary().total == 1);
+        assert(runner.results().size() == 1);
+        assert(runner.results().front().full_name() == "Self.passes_plain");
+    }
+}
+
 static void test_tag_filtering() {
     // Only the deliberately-failing cases carry the expected-fail tag.
     RunOptions opts;
@@ -230,6 +245,7 @@ int main() {
     test_register_bank();
     test_i2c_expectations();
     test_serial_port();
+    test_runner_can_be_reused();
     test_tag_filtering();
     test_junit_output_is_well_formed();
     test_tap_output();

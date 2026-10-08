@@ -199,6 +199,7 @@ bool Runner::run(std::ostream& out_ref, std::ostream& console_err) {
     auto run_start = clock::now();
     reporter->begin_run(static_cast<int>(selected.size()));
 
+    results_.clear();
     summary_ = RunSummary{};
     summary_.total = static_cast<int>(selected.size());
 
